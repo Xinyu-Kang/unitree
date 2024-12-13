@@ -63,7 +63,7 @@ target_link_libraries(qt_interface
     Qt5::Core
     Qt5::Widgets
     Qt5::Network
-    unitree_sdk_main
+    unitree_sdk
 )
 
 # Global AUTOMOC for Qt Targets
