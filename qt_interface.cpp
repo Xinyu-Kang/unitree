@@ -27,7 +27,7 @@ public:
         connect(backwardButton, &QPushButton::clicked, this, &RobotController::sendMoveBackwardCommand);
 
         tcpSocket = new QTcpSocket(this);
-        tcpSocket->connectToHost("192.168.1.10", 8888);  // 连接机械狗
+        tcpSocket->connectToHost("192.168.123.161", 8888);  // 连接机械狗
     }
 
 private slots:
