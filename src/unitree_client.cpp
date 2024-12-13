@@ -1,10 +1,10 @@
-#include <unitree/robot/go2/sport/sport_client.hpp>
+#include <unitree/robot/b2/sport/sport_client.hpp>
 #include <iostream>
 #include <thread>
 #include <boost/asio.hpp>
 
 using namespace boost::asio;
-using namespace unitree::robot::go2;
+using namespace unitree::robot::b2;
 
 // 处理从电脑接收到的指令
 void handleCommand(const std::string &command, SportClient &sport_client) {
