@@ -1,43 +1,59 @@
 #include <unitree/robot/b2/sport/sport_client.hpp>
+#include <unitree/robot/channel/channel_factory.hpp>
+#include <unitree/robot/channel/channel_subscriber.hpp>
 #include <iostream>
-#include <thread>
-#include <boost/asio.hpp>
+#include <string>
 
-using namespace boost::asio;
+using namespace unitree::robot;
 using namespace unitree::robot::b2;
 
-// 处理从电脑接收到的指令
+// Handle incoming robot commands
 void handleCommand(const std::string &command, SportClient &sport_client) {
     if (command == "sit") {
-        sport_client.Sit();  // 调用 SDK 的坐下接口
+        sport_client.Sit();  // Call SDK's sit function
+        std::cout << "Command: Sit executed.\n";
     } else if (command == "stand_up") {
-        sport_client.StandUp();  // 调用站起来接口
+        sport_client.StandUp();  // Call stand-up function
+        std::cout << "Command: Stand Up executed.\n";
     } else if (command == "move_forward") {
-        sport_client.Move(0.5, 0, 0);  // 向前走，设置 vx=0.5
+        sport_client.Move(0.5, 0, 0);  // Move forward with vx=0.5
+        std::cout << "Command: Move Forward executed.\n";
     } else if (command == "move_backward") {
-        sport_client.Move(-0.5, 0, 0);  // 向后走，设置 vx=-0.5
+        sport_client.Move(-0.5, 0, 0);  // Move backward with vx=-0.5
+        std::cout << "Command: Move Backward executed.\n";
+    } else {
+        std::cerr << "Unknown command: " << command << std::endl;
     }
 }
 
 int main() {
-    // 初始化机械狗控制接口
-    SportClient sport_client;
-    sport_client.Init();
+    try {
+        // Initialize DDS communication
+        ChannelFactory::Instance()->Init(0);  // Automatically selects network interface
+        std::cout << "DDS communication initialized.\n";
 
-    // 设置网络通信
-    io_context io;
-    ip::tcp::acceptor acceptor(io, ip::tcp::endpoint(ip::tcp::v4(), 8888));
-    ip::tcp::socket socket(io);
+        // Initialize SportClient for robot control
+        SportClient sport_client;
+        sport_client.Init();
+        std::cout << "SportClient initialized.\n";
 
-    std::cout << "Waiting for connection..." << std::endl;
-    acceptor.accept(socket);
-    std::cout << "Connected to controller!" << std::endl;
+        // Create a subscriber for receiving commands
+        ChannelSubscriber<std::string> commandSubscriber("robot_command_channel");
+        commandSubscriber.InitChannel([&](const void *message) {
+            std::string command = *static_cast<const std::string *>(message);
+            handleCommand(command, sport_client);
+        });
 
-    char buffer[1024];
-    while (true) {
-        std::size_t length = socket.read_some(buffer(buffer));
-        std::string command(buffer, length);
-        handleCommand(command, sport_client);
+        std::cout << "Waiting for commands...\n";
+
+        // Keep the program running to process incoming commands
+        while (true) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+    } catch (const std::exception &e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
     }
 
     return 0;
