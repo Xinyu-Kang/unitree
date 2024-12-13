@@ -62,6 +62,12 @@ target_link_libraries(unitree_client
 
 # 定义 qt_interface 可执行文件
 add_executable(qt_interface src/qt_interface.cpp)
+
+# Enable automatic `moc` generation for `Q_OBJECT`
+set_target_properties(qt_interface PROPERTIES
+    AUTOMOC ON
+)
+
 target_link_libraries(qt_interface
     Qt5::Core
     Qt5::Widgets
