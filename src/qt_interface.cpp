@@ -1,9 +1,12 @@
 #include <QApplication>
 #include <QWidget>
 #include <QPushButton>
-#include <QTcpSocket>
 #include <QVBoxLayout>
 #include <QDebug>
+#include <unitree/robot/channel/channel_factory.hpp>
+#include <unitree/robot/channel/channel_publisher.hpp>
+
+using namespace unitree::robot;
 
 class RobotController : public QWidget {
     Q_OBJECT
@@ -27,39 +30,41 @@ public:
         connect(forwardButton, &QPushButton::clicked, this, &RobotController::sendMoveForwardCommand);
         connect(backwardButton, &QPushButton::clicked, this, &RobotController::sendMoveBackwardCommand);
 
-        tcpSocket = new QTcpSocket(this);
+        // Initialize DDS communication
+        ChannelFactory::Instance()->Init(0); // Automatically select network interface
+        publisher.reset(new ChannelPublisher<std::string>("robot_command_channel"));
+        publisher->InitChannel();
 
-        // Connect to host
-        tcpSocket->connectToHost("192.168.123.161", 8888);
-
-        // Handle connection success or error
-        connect(tcpSocket, &QTcpSocket::connected, []() {
-            qDebug() << "Successfully connected to the server!";
-        });
-        connect(tcpSocket, &QTcpSocket::errorOccurred, [](QAbstractSocket::SocketError error) {
-            qDebug() << "Connection failed with error:" << error;
-        });
+        qDebug() << "DDS Publisher initialized for topic: robot_command_channel";
     }
 
 private slots:
     void sendSitCommand() {
-        tcpSocket->write("sit");
+        sendCommand("sit");
     }
 
     void sendStandUpCommand() {
-        tcpSocket->write("stand_up");
+        sendCommand("stand_up");
     }
 
     void sendMoveForwardCommand() {
-        tcpSocket->write("move_forward");
+        sendCommand("move_forward");
     }
 
     void sendMoveBackwardCommand() {
-        tcpSocket->write("move_backward");
+        sendCommand("move_backward");
     }
 
 private:
-    QTcpSocket *tcpSocket;
+    void sendCommand(const std::string &command) {
+        if (publisher->Write(command)) {
+            qDebug() << "Command sent:" << QString::fromStdString(command);
+        } else {
+            qDebug() << "Failed to send command:" << QString::fromStdString(command);
+        }
+    }
+
+    std::unique_ptr<ChannelPublisher<std::string>> publisher;
 };
 
 int main(int argc, char *argv[]) {
